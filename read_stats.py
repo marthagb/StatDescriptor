@@ -1,6 +1,5 @@
 from permuta import Perm
 import json
-import sys
 
 def read_stats_json(file, n):
 	f = open(file, 'r')

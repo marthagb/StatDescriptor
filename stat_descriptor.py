@@ -1,6 +1,7 @@
 from permuta import Perm, PermSet, MeshPatt
 from find_stats import *
 from read_stats import *
+import sys
 
 def occs(perm, meshpatt):
 	"""Return the number of occurrences of meshpatt in perm."""
