@@ -1,7 +1,7 @@
 import pytest
 
 from permuta import Perm, PermSet
-from permuta.permutils.classical_basis import *
+from classical_basis import *
 
 def test_classical_basis():
 	p1 = PermSet([Perm(()),Perm((0)),Perm((0,1)),Perm((1,0)),Perm((0,1,2)),Perm((0,2,1)),
