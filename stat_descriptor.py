@@ -528,7 +528,7 @@ examples = {"2":("0002",4),"4":("0004",4),"7":("0007",4),"18":("0018",4),"21":("
 
 
 def stat_descriptor(n):
-	"""Find one or more descriptions of stats, if possible.
+	"""Find one or more descriptions of the given statistic, if possible.
 	Args:
 		n: Number of statistic from findstat.org
 
@@ -537,7 +537,7 @@ def stat_descriptor(n):
 
 	try:
 		ex,l = examples[n]
-	except:
+	except KeyError:
 		ex,l = "0"*(4-len(n))+n, 4
 	print(n + ".\n")
 	stats = read_stats_json("stats/St00"+ex+".json", l)
@@ -563,6 +563,7 @@ def print_results(meshpatts):
 		for mp in mps:
 			print(mp, "\n")
 	print("------------------------------------------\n")
+
 
 ex = sys.argv[1:]
 for example in ex:

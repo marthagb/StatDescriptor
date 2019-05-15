@@ -13,7 +13,7 @@ def read_stats_json(file, n):
 		    perm = Perm.to_standard(eval(perm))
 		    if len(perm) <= n:
 		    	stats.append((perm, value))
-	except:
+	except KeyError:
 		for perm, value in data['StatisticData'].items():
 		    perm = Perm.to_standard(eval(perm))
 		    if len(perm) <= n:
