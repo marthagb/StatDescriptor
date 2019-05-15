@@ -31,6 +31,8 @@ def smart_shade(perm, meshpatt, loccs=None):
 	return boxes
 
 def smshcol(perm, meshpatt):
+	"""Return list of columns that can be shaded to reduce the number
+	   of occurrences of meshpatt in perm."""
 	cols = []
 	loccs = list(meshpatt.occurrences_in(perm))
 	for candidate_indices in loccs:
@@ -45,7 +47,7 @@ def smshcol(perm, meshpatt):
 	return cols
 
 def smshrow(perm, meshpatt, loccs=None):
-	"""Return list of boxes that can be shaded to reduce the number
+	"""Return list of rows that can be shaded to reduce the number
 	   of occurrences of meshpatt in perm."""
 
 	rows = []
@@ -63,8 +65,8 @@ def smshrow(perm, meshpatt, loccs=None):
 	return rows
 
 def smshbiv(perm, meshpatt, loccs=None):
-	"""Return list of boxes that can be shaded to reduce the number
-	   of occurrences of meshpatt in perm."""
+	"""Return list of columns and rows that can be shaded to reduce the
+	   number of occurrences of meshpatt in perm."""
 
 	cols,rows = [],[]
 	if loccs == None:
@@ -95,7 +97,7 @@ def smart_shade_list(perm, meshpatts):
 	return r
 
 def smshcol_list(perm, meshpatts):
-	"""Return list of boxes that can be shaded to reduce the sum
+	"""Return list of columns that can be shaded to reduce the sum
 	   of occurrences of mesh patterns in meshpatts in perm."""
 	r = []
 	for i in range(len(meshpatts)):
@@ -104,7 +106,7 @@ def smshcol_list(perm, meshpatts):
 	return r
 
 def smshrow_list(perm, meshpatts):
-	"""Return list of boxes that can be shaded to reduce the sum
+	"""Return list of rows that can be shaded to reduce the sum
 	   of occurrences of mesh patterns in meshpatts in perm."""
 	r = []
 	for i in range(len(meshpatts)):
@@ -113,8 +115,8 @@ def smshrow_list(perm, meshpatts):
 	return r
 
 def smshbiv_list(perm, meshpatts):
-	"""Return list of boxes that can be shaded to reduce the sum
-	   of occurrences of mesh patterns in meshpatts in perm."""
+	"""Return list of columns and rows that can be shaded to reduce
+	   the sum of occurrences of mesh patterns in meshpatts in perm."""
 	r = []
 	for i in range(len(meshpatts)):
 		s = smshbiv(perm, meshpatts[i])
@@ -155,21 +157,21 @@ def shade_list(meshpatts, boxes):
 	return r
 
 def shcol_list(meshpatts, cols):
-	"""Shade given boxes in meshpatts."""
+	"""Shade given columns in meshpatts."""
 	r = []
 	for i in range(len(meshpatts)):
 		r.append(meshpatts[i].shade([(col,y) for y in range(len(meshpatts[i])+1) for n,col in cols if n == i]))
 	return r
 
 def shrow_list(meshpatts, rows):
-	"""Shade given boxes in meshpatts."""
+	"""Shade given rows in meshpatts."""
 	r = []
 	for i in range(len(meshpatts)):
 		r.append(meshpatts[i].shade([(x,row) for x in range(len(meshpatts[i])+1) for n,row in rows if n == i]))
 	return r
 
 def shbiv_list(meshpatts, crs):
-	"""Shade given boxes in meshpatts."""
+	"""Shade given columns and rows in meshpatts."""
 	r = []
 	for i in range(len(meshpatts)):
 		shd = [cr for n,cr in crs if n == i]
@@ -217,7 +219,20 @@ def stat_descriptor_single(stats):
 
 memo = {}
 def stat_descriptor_multiple(stats, priors=[], maxpatts=2, maxlen=3):
-	"""Return lists of mesh patterns that describe stats."""
+	"""Find one or more lists of mesh patterns that describe stats, if possible.
+	Args:
+		stats:
+			The statistic for which to find a description.
+			List of tuples (p,s) where p is a permutation and s is an integer.
+		priors:
+			List of mesh patterns previously selected for the description.
+		maxpatts:
+			The maximum number of patterns allowed in a description.
+		maxlen:
+			The maximum length of patterns allowed in a description.
+
+	Returns list of lists of mesh patterns that describe the given statistic.
+	"""
 
 	tsp = tuple(sorted(priors))
 	if tsp in memo:
@@ -276,14 +291,28 @@ def stat_descriptor_multiple(stats, priors=[], maxpatts=2, maxlen=3):
 	memo[tsp] = ff
 	return ff
 
-def sdm_col(stats, priors=[], maxpatts=4, maxlen=3):
-	"""Return lists of mesh patterns that describe stats."""
+memo_v = {}
+def sdm_vincular(stats, priors=[], maxpatts=4, maxlen=3):
+	"""Find one or more lists of mesh patterns (vincular patterns) that describe stats, if possible.
+	Args:
+		stats:
+			The statistic for which to find a description.
+			List of tuples (p,s) where p is a permutation and s is an integer.
+		priors:
+			List of mesh patterns previously selected for the description.
+		maxpatts:
+			The maximum number of patterns allowed in a description.
+		maxlen:
+			The maximum length of patterns allowed in a description.
+
+	Returns list of lists of mesh patterns (vincular patterns) that describe the given statistic.
+	"""
 
 	tsp = tuple(sorted(priors))
-	if tsp in memo:
+	if tsp in memo_v:
 		return []
 	if len(priors) > maxpatts:
-		memo[tsp] = []
+		memo_v[tsp] = []
 		return []
 	if priors == []:
 		for perm, stat in stats:
@@ -291,13 +320,13 @@ def sdm_col(stats, priors=[], maxpatts=4, maxlen=3):
 				p = perm
 				break
 		if len(p) > maxlen:
-			memo[tsp] = priors
+			memo_v[tsp] = priors
 			return []
 		meshpatts = [[MeshPatt(p)]]
 	else:
 		meshpatts = [priors]
 	if len(priors) == maxpatts and any(occsum(p,priors) < s for p,s in stats):
-		memo[tsp] = []
+		memo_v[tsp] = []
 		return []
 	i = 0
 	while i < 10 and not all(all(occsum(p,m) <= s for p,s in stats) for m in meshpatts):
@@ -326,24 +355,38 @@ def sdm_col(stats, priors=[], maxpatts=4, maxlen=3):
 					p = perm
 					break
 			if len(p) <= maxlen:
-				f.extend(sdm_col(stats, mp+[MeshPatt(p)], maxpatts, maxlen))
+				f.extend(sdm_vincular(stats, mp+[MeshPatt(p)], maxpatts, maxlen))
 
 	if len(f) == 0:
-		memo[tsp] = []
+		memo_v[tsp] = []
 		return []
 	minlen = min([len(l) for l in f])
 	ff = set([tuple(sorted(l)) for l in f if len(l) == minlen])
-	memo[tsp] = ff
+	memo_v[tsp] = ff
 	return ff
 
-def sdm_row(stats, priors=[], maxpatts=4, maxlen=3):
-	"""Return lists of mesh patterns that describe stats."""
+memo_c = {}
+def sdm_covincular(stats, priors=[], maxpatts=4, maxlen=3):
+	"""Find one or more lists of mesh patterns (covincular patterns) that describe stats, if possible.
+	Args:
+		stats:
+			The statistic for which to find a description.
+			List of tuples (p,s) where p is a permutation and s is an integer.
+		priors:
+			List of mesh patterns previously selected for the description.
+		maxpatts:
+			The maximum number of patterns allowed in a description.
+		maxlen:
+			The maximum length of patterns allowed in a description.
+
+	Returns list of lists of mesh patterns (covincular patterns) that describe the given statistic.
+	"""
 
 	tsp = tuple(sorted(priors))
-	if tsp in memo:
+	if tsp in memo_c:
 		return []
 	if len(priors) > maxpatts:
-		memo[tsp] = []
+		memo_c[tsp] = []
 		return []
 	if priors == []:
 		for perm, stat in stats:
@@ -351,13 +394,13 @@ def sdm_row(stats, priors=[], maxpatts=4, maxlen=3):
 				p = perm
 				break
 		if len(p) > maxlen:
-			memo[tsp] = priors
+			memo_c[tsp] = priors
 			return []
 		meshpatts = [[MeshPatt(p)]]
 	else:
 		meshpatts = [priors]
 	if len(priors) == maxpatts and any(occsum(p,priors) < s for p,s in stats):
-		memo[tsp] = []
+		memo_c[tsp] = []
 		return []
 	i = 0
 	while i < 10 and not all(all(occsum(p,m) <= s for p,s in stats) for m in meshpatts):
@@ -386,24 +429,38 @@ def sdm_row(stats, priors=[], maxpatts=4, maxlen=3):
 					p = perm
 					break
 			if len(p) <= maxlen:
-				f.extend(sdm_row(stats, mp+[MeshPatt(p)], maxpatts, maxlen))
+				f.extend(sdm_covincular(stats, mp+[MeshPatt(p)], maxpatts, maxlen))
 
 	if len(f) == 0:
-		memo[tsp] = []
+		memo_c[tsp] = []
 		return []
 	minlen = min([len(l) for l in f])
 	ff = set([tuple(sorted(l)) for l in f if len(l) == minlen])
-	memo[tsp] = ff
+	memo_c[tsp] = ff
 	return ff
 
-def sdm_biv(stats, priors=[], maxpatts=4, maxlen=3):
-	"""Return lists of mesh patterns that describe stats."""
+memo_b = {}
+def sdm_bivincular(stats, priors=[], maxpatts=4, maxlen=3):
+	"""Find one or more lists of mesh patterns (bivincular patterns) that describe stats, if possible.
+	Args:
+		stats:
+			The statistic for which to find a description.
+			List of tuples (p,s) where p is a permutation and s is an integer.
+		priors:
+			List of mesh patterns previously selected for the description.
+		maxpatts:
+			The maximum number of patterns allowed in a description.
+		maxlen:
+			The maximum length of patterns allowed in a description.
+
+	Returns list of lists of mesh patterns (bivincular patterns) that describe the given statistic.
+	"""
 
 	tsp = tuple(sorted(priors))
-	if tsp in memo:
+	if tsp in memo_b:
 		return []
 	if len(priors) > maxpatts:
-		memo[tsp] = []
+		memo_b[tsp] = []
 		return []
 	if priors == []:
 		for perm, stat in stats:
@@ -411,13 +468,13 @@ def sdm_biv(stats, priors=[], maxpatts=4, maxlen=3):
 				p = perm
 				break
 		if len(p) > maxlen:
-			memo[tsp] = priors
+			memo_b[tsp] = priors
 			return []
 		meshpatts = [[MeshPatt(p)]]
 	else:
 		meshpatts = [priors]
 	if len(priors) == maxpatts and any(occsum(p,priors) < s for p,s in stats):
-		memo[tsp] = []
+		memo_b[tsp] = []
 		return []
 	i = 0
 	while i < 10 and not all(all(occsum(p,m) <= s for p,s in stats) for m in meshpatts):
@@ -446,14 +503,14 @@ def sdm_biv(stats, priors=[], maxpatts=4, maxlen=3):
 					p = perm
 					break
 			if len(p) <= maxlen:
-				f.extend(sdm_biv(stats, mp+[MeshPatt(p)], maxpatts, maxlen))
+				f.extend(sdm_bivincular(stats, mp+[MeshPatt(p)], maxpatts, maxlen))
 
 	if len(f) == 0:
-		memo[tsp] = []
+		memo_b[tsp] = []
 		return []
 	minlen = min([len(l) for l in f])
 	ff = set([tuple(sorted(l)) for l in f if len(l) == minlen])
-	memo[tsp] = ff
+	memo_b[tsp] = ff
 	return ff
 
 
@@ -469,30 +526,46 @@ examples = {"2":("0002",4),"4":("0004",4),"7":("0007",4),"18":("0018",4),"21":("
 	"542":("0542",3),"546":("0546",4),"619":("0619",5),"740":("0740",5),"756":("0756",4),"799":("0799",5),"834":("0834",4),"836":("0836",4),
 	"1082":("1082",5),"1087":("1087",5),"1130":("1130",5)}
 
+
 def stat_descriptor(n):
-	ex,l = examples[n]
+	"""Find one or more descriptions of stats, if possible.
+	Args:
+		n: Number of statistic from findstat.org
+
+	Returns list of lists of mesh patterns that describe the given statistic.
+	"""
+
+	try:
+		ex,l = examples[n]
+	except:
+		ex,l = "0"*(4-len(n))+n, 4
 	print(n + ".\n")
 	stats = read_stats_json("stats/St00"+ex+".json", l)
+
 	sds = stat_descriptor_single(stats)
 	if len(sds) > 0:
-		sd = [[m] for m in sds]
-	else:
-		if n == "4" or n == "23" or n == "30" or n == "35" or n == "154" or n == "325" or n == "353" or n == "483" or n == "495" or n == "619" or n == "834" or n == "836":
-			sd = sdm_col(stats)
-		elif n == "55" or n == "304" or n == "305" or n == "446":
-			sd = sdm_row(stats)
-		else:
-			#sd = sdm_biv(stats)
-			sd = stat_descriptor_multiple(stats)
-	for mps in sd:
+		return [[m] for m in sds]
+
+	sdmv = sdm_vincular(stats)
+	if len(sdmv) > 0:
+		return sdmv
+
+	sdmc = sdm_covincular(stats)
+	if len(sdmc) > 0:
+		return sdmc
+
+	sd = stat_descriptor_multiple(stats)
+	return sd
+
+def print_results(meshpatts):
+	for mps in meshpatts:
 		print("------------------------------------------\n")
 		for mp in mps:
 			print(mp, "\n")
 	print("------------------------------------------\n")
-	print(len(sd))
-	return sd
 
 ex = sys.argv[1:]
 for example in ex:
 	meshps = stat_descriptor(example)
-	memo = {}
+	print_results(meshps)
+	memo, memo_v, memo_c, memo_b = {}, {}, {}, {}
